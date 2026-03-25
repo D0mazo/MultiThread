@@ -1,21 +1,13 @@
+#include "Cargo.h"
+
 #include <iostream>
 #include <thread>
-#include <mutex>
-#include <vector>
-#include <climits>
 #include <iomanip>
-#include <string>
-#include <chrono>
-
-using Clock = std::chrono::steady_clock;
-using Ms    = std::chrono::duration<double, std::milli>;
+#include <climits>
 
 // ---------------------------------------------------------------------------
-// Problem data
+// Duomenys
 // ---------------------------------------------------------------------------
-
-const int WAREHOUSES = 3;
-const int DESTINATIONS = 3;
 
 const int cost[WAREHOUSES][DESTINATIONS] = {
     {4, 8, 1},   // Sandelis 1
@@ -30,40 +22,53 @@ const std::string warehouseNames[WAREHOUSES] = {"Sandelis 1", "Sandelis 2", "San
 const std::string destNames[DESTINATIONS]    = {"Taskas A",   "Taskas B",   "Taskas C"};
 
 // ---------------------------------------------------------------------------
-// Shared result storage
+// Globalus kintamieji
 // ---------------------------------------------------------------------------
-
-struct Allocation {
-    int warehouse;
-    int destination;
-    int quantity;
-    int unitCost;
-    int totalCost;
-};
 
 std::vector<Allocation> results;
 int grandTotal = 0;
 std::mutex resultMutex;
 std::mutex demandMutex;
-std::mutex coutMutex;   // prevents interleaved console output
-
-int demandLeft[DESTINATIONS];
-
-// Per-thread timing (ms)
+std::mutex coutMutex;
+int demandLeft[DESTINATIONS] = {0};
 double threadTime[WAREHOUSES] = {0};
 
 // ---------------------------------------------------------------------------
-// Helper: locked print
+// Pagalbine funkcija: gija saugi spausdinimo
 // ---------------------------------------------------------------------------
+
+template<typename T>
+void safePrintImpl(T&& val) {
+    std::cout << std::forward<T>(val);
+}
+
+template<typename T, typename... Rest>
+void safePrintImpl(T&& val, Rest&&... rest) {
+    std::cout << std::forward<T>(val);
+    safePrintImpl(std::forward<Rest>(rest)...);
+}
 
 template<typename... Args>
 void safePrint(Args&&... args) {
     std::lock_guard<std::mutex> lk(coutMutex);
-    (std::cout << ... << args);
+    safePrintImpl(std::forward<Args>(args)...);
 }
 
 // ---------------------------------------------------------------------------
-// Thread worker
+// Busenos atstatymas (naujai simuliacijai)
+// ---------------------------------------------------------------------------
+
+void resetState() {
+    results.clear();
+    grandTotal = 0;
+    for (int j = 0; j < DESTINATIONS; j++)
+        demandLeft[j] = demand[j];
+    for (int i = 0; i < WAREHOUSES; i++)
+        threadTime[i] = 0;
+}
+
+// ---------------------------------------------------------------------------
+// Gijos darbuotojas
 // ---------------------------------------------------------------------------
 
 void warehouseThread(int i) {
@@ -102,8 +107,8 @@ void warehouseThread(int i) {
         myAllocs.push_back(a);
 
         auto elapsed = Ms(Clock::now() - t0).count();
-        safePrint("  [Gija ", i+1, " | +", std::fixed, std::setprecision(1),
-                  elapsed, " ms] ",
+        safePrint("  [Gija ", i+1, " | +",
+                  std::fixed, std::setprecision(1), elapsed, " ms] ",
                   warehouseNames[i], " -> ", destNames[bestDest],
                   " : ", qty, " t x ", bestCost,
                   " EUR/t = ", qty * bestCost, " EUR\n");
@@ -123,12 +128,13 @@ void warehouseThread(int i) {
     }
 
     safePrint("[Gija ", i+1, "] ", warehouseNames[i],
-              " baige. Truko: ", std::fixed, std::setprecision(2),
-              threadTime[i], " ms | Likutis: ", remaining, " t\n");
+              " baige. Truko: ",
+              std::fixed, std::setprecision(2), threadTime[i],
+              " ms | Likutis: ", remaining, " t\n");
 }
 
 // ---------------------------------------------------------------------------
-// Print helpers
+// Spausdinimo funkcijos
 // ---------------------------------------------------------------------------
 
 void printMatrix() {
@@ -156,21 +162,22 @@ void printTimings(double totalMs) {
     std::cout << "\n=== LAIKO STATISTIKA ===\n";
     std::cout << std::string(42, '-') << "\n";
     for (int i = 0; i < WAREHOUSES; i++) {
-        std::cout << std::left  << std::setw(14) << warehouseNames[i]
+        std::cout << std::left  << std::setw(18) << warehouseNames[i]
                   << std::right << std::setw(10) << std::fixed
                   << std::setprecision(2) << threadTime[i] << " ms\n";
     }
     std::cout << std::string(42, '-') << "\n";
-    std::cout << std::left  << std::setw(14) << "Viso (lygiagretu)"
-              << std::right << std::setw(10) << std::fixed
-              << std::setprecision(2) << totalMs << " ms\n";
 
     double sequential = 0;
     for (int i = 0; i < WAREHOUSES; i++) sequential += threadTime[i];
-    std::cout << std::left  << std::setw(14) << "Viso (nuosekliai)"
+
+    std::cout << std::left  << std::setw(18) << "Viso (lygiagretu)"
+              << std::right << std::setw(10) << std::fixed
+              << std::setprecision(2) << totalMs << " ms\n";
+    std::cout << std::left  << std::setw(18) << "Viso (nuosekliai)"
               << std::right << std::setw(10) << std::fixed
               << std::setprecision(2) << sequential << " ms\n";
-    std::cout << std::left  << std::setw(14) << "Pagreitis"
+    std::cout << std::left  << std::setw(18) << "Pagreitis"
               << std::right << std::setw(10) << std::fixed
               << std::setprecision(2) << sequential / totalMs << "x\n";
     std::cout << std::string(42, '-') << "\n";
@@ -202,23 +209,15 @@ void printResults() {
 }
 
 // ---------------------------------------------------------------------------
-// main
+// Pagrindinė simuliacijos funkcija
 // ---------------------------------------------------------------------------
 
-int main() {
-    std::cout << "============================================\n";
-    std::cout << "  Korviniu Pervezimo Optimizavimas\n";
-    std::cout << "  Daugiagileja programa (C++ threads)\n";
-    std::cout << "============================================\n";
-
-    printMatrix();
-
-    for (int j = 0; j < DESTINATIONS; j++)
-        demandLeft[j] = demand[j];
+void runSimulation() {
+    resetState();
 
     std::cout << "\n--- Paleidziamos " << WAREHOUSES << " gijos ---\n";
 
-    auto progStart = Clock::now();
+    auto start = Clock::now();
 
     std::vector<std::thread> threads;
     for (int i = 0; i < WAREHOUSES; i++)
@@ -227,12 +226,10 @@ int main() {
     for (auto& t : threads)
         t.join();
 
-    double totalMs = Ms(Clock::now() - progStart).count();
+    double totalMs = Ms(Clock::now() - start).count();
 
     std::cout << "\n--- Visos gijos baige darka ---\n";
 
     printResults();
     printTimings(totalMs);
-
-    return 0;
 }

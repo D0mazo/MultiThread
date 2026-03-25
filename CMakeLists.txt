@@ -7,6 +7,8 @@ add_executable(Logistika
         main.cpp
         Menu.cpp
         Menu.h
+        InputData.cpp
+        InputData.h
         Cargo.cpp
         Cargo.h)
 
@@ -14,6 +16,7 @@ add_executable(Testai
         TestaiMain.cpp
         Testai.cpp
         Testai.h
+        Cargo.cpp
         Cargo.h)
 
 if(WIN32)

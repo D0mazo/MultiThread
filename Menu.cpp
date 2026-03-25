@@ -1,5 +1,6 @@
 #include "Menu.h"
 #include "Cargo.h"
+#include "InputData.h"
 
 #include <iostream>
 #include <iomanip>
@@ -9,24 +10,8 @@
 #include <chrono>
 #include <algorithm>
 
-using Clock = std::chrono::steady_clock;
-using Ms    = std::chrono::duration<double, std::milli>;
-
 // ---------------------------------------------------------------------------
-// Istorija
-// ---------------------------------------------------------------------------
-
-struct HistoryEntry {
-    int    threadCount;
-    int    totalCost;
-    double timeMs;
-    double speedup;
-};
-
-static std::vector<HistoryEntry> history;
-
-// ---------------------------------------------------------------------------
-// Spalvotas tekstas (Windows ANSI)
+// Spalvos
 // ---------------------------------------------------------------------------
 
 #ifdef _WIN32
@@ -48,10 +33,22 @@ static void enableColor() {}
 #define YELLOW  "\033[33m"
 #define RED     "\033[31m"
 #define MAGENTA "\033[35m"
-#define BLUE    "\033[34m"
 
 // ---------------------------------------------------------------------------
-// Pagalbines funkcijos
+// Istorija
+// ---------------------------------------------------------------------------
+
+struct HistoryEntry {
+    int    threadCount;
+    int    totalCost;
+    double timeMs;
+    double speedup;
+};
+
+static std::vector<HistoryEntry> history;
+
+// ---------------------------------------------------------------------------
+// Pagalbinės funkcijos
 // ---------------------------------------------------------------------------
 
 static void clearScreen() {
@@ -62,40 +59,39 @@ static void clearScreen() {
 #endif
 }
 
-static void printSeparator(char c = '-', int len = 60) {
-    std::cout << std::string(len, c) << "\n";
+static void printSep(char c = '-', int n = 62) {
+    std::cout << std::string(n, c) << "\n";
 }
 
 static void printHeader() {
-    printSeparator('=');
+    printSep('=');
     std::cout << BOLD << CYAN
               << "   KORVINIU PERVEZIMO OPTIMIZAVIMAS\n"
               << "   Daugiagileja sistema  |  C++ threads\n"
               << RESET;
-    printSeparator('=');
+    printSep('=');
 }
 
-static int readInt(const std::string& prompt, int minVal, int maxVal) {
-    int val;
+static int readInt(const std::string& prompt, int lo, int hi) {
+    int v;
     while (true) {
         std::cout << YELLOW << prompt << RESET;
-        if (std::cin >> val && val >= minVal && val <= maxVal) {
-            std::cin.ignore();
-            return val;
+        if (std::cin >> v && v >= lo && v <= hi) {
+            std::cin.ignore(1000, '\n');
+            return v;
         }
         std::cin.clear();
-        std::cin.ignore(10000, '\n');
+        std::cin.ignore(1000, '\n');
         std::cout << RED << "  Klaida: iveskite skaiciu nuo "
-                  << minVal << " iki " << maxVal << "\n" << RESET;
+                  << lo << " iki " << hi << "\n" << RESET;
     }
 }
 
 // ---------------------------------------------------------------------------
-// Simuliacija su pasirinktu giju skaiciumi
+// Simuliacija su pasirinktu gijų skaičiumi
 // ---------------------------------------------------------------------------
 
 static void runWithThreadCount(int threadCount) {
-    // Atstatome busena
     results.clear();
     grandTotal = 0;
     for (int j = 0; j < DESTINATIONS; j++)
@@ -104,36 +100,23 @@ static void runWithThreadCount(int threadCount) {
         threadTime[i] = 0;
 
     std::cout << "\n" << BOLD << "Paleidziamos " << threadCount
-              << " gijos..." << RESET << "\n\n";
+              << " gijos...\n" << RESET << "\n";
 
     auto start = Clock::now();
 
-    // Paleidziame threadCount giju (paskirstome sandelius tarp jų)
     std::vector<std::thread> threads;
-
-    if (threadCount <= WAREHOUSES) {
-        // Maziau arba lygiai sandeliu - kiekviena gija gauna bent viena
-        // Paskirstome sandelius kiek galime
-        for (int i = 0; i < threadCount && i < WAREHOUSES; i++)
-            threads.emplace_back(warehouseThread, i);
-    } else {
-        // Daugiau giju nei sandeliu - papildomos gijos dirba kartu
-        // Kiekvienas sandelis gauna savo gija, likusios laukia
-        for (int i = 0; i < WAREHOUSES; i++)
-            threads.emplace_back(warehouseThread, i);
-    }
-
-    for (auto& t : threads)
-        t.join();
+    int count = std::min(threadCount, WAREHOUSES);
+    for (int i = 0; i < count; i++)
+        threads.emplace_back(warehouseThread, i);
+    for (auto& t : threads) t.join();
 
     double totalMs = Ms(Clock::now() - start).count();
 
     std::cout << "\n";
-    printSeparator();
+    printSep();
     printResults();
     printTimings(totalMs);
 
-    // Issaugome i istorija
     double seq = 0;
     for (int i = 0; i < WAREHOUSES; i++) seq += threadTime[i];
     double speedup = (totalMs > 0) ? seq / totalMs : 1.0;
@@ -141,59 +124,26 @@ static void runWithThreadCount(int threadCount) {
 }
 
 // ---------------------------------------------------------------------------
-// Meniu: keisti matrica
-// ---------------------------------------------------------------------------
-
-static void menuEditMatrix() {
-    clearScreen();
-    printHeader();
-    std::cout << BOLD << "\n  SANAUDU MATRICOS REDAGAVIMAS\n" << RESET;
-    printSeparator();
-
-    std::cout << "\nDabar esanti matrica:\n\n";
-    printMatrix();
-
-    std::cout << "\n" << YELLOW
-              << "Iveskite naują kaina cost[i][j]\n"
-              << "(i = sandelis 0-" << WAREHOUSES-1
-              << ", j = taskas 0-" << DESTINATIONS-1 << ")\n"
-              << RESET;
-
-    int i = readInt("Sandelio numeris (i): ", 0, WAREHOUSES - 1);
-    int j = readInt("Paskirties tasko numeris (j): ", 0, DESTINATIONS - 1);
-    int newCost = readInt("Nauja kaina (EUR/t): ", 1, 9999);
-
-    // cost[] yra const - demonstruojame tik kaip tai veiktu
-    // (realiame projekte reiktu naudoti nekonstantine matrica)
-    std::cout << GREEN << "\n  [Demonstruojama] cost[" << i << "][" << j
-              << "] butu pakeista i " << newCost << " EUR/t\n"
-              << "  Norint keisti - matrica turi buti nekonstantine.\n"
-              << RESET;
-
-    std::cout << "\nSpauskite Enter...";
-    std::cin.get();
-}
-
-// ---------------------------------------------------------------------------
-// Meniu: giju palyginimas
+// Meniu: gijų palyginimas
 // ---------------------------------------------------------------------------
 
 static void menuCompareThreads() {
     clearScreen();
     printHeader();
     std::cout << BOLD << "\n  GIJU SKAICIAUS PALYGINIMAS\n" << RESET;
-    printSeparator();
-    std::cout << "\nBus paleista su 1, 2 ir 3 gijomis ir palyginti laikai.\n";
-    std::cout << YELLOW << "Spauskite Enter kad pradeti..." << RESET;
+    printSep();
+    std::cout << "\nBus paleista su 1, 2 ir " << WAREHOUSES
+              << " gijomis ir palyginti laikai.\n";
+    std::cout << YELLOW << "Spauskite Enter..." << RESET;
     std::cin.get();
 
-    double times[3];
-    int costs[3];
+    int maxT = std::min(3, WAREHOUSES);
+    double times[3] = {0};
+    int    costs[3] = {0};
 
-    for (int t = 1; t <= 3; t++) {
+    for (int t = 1; t <= maxT; t++) {
         std::cout << "\n" << BOLD << CYAN
-                  << "--- Paleidimas su " << t << " gija(-omis) ---\n"
-                  << RESET;
+                  << "--- Paleidimas su " << t << " gija(-omis) ---\n" << RESET;
 
         results.clear();
         grandTotal = 0;
@@ -213,30 +163,28 @@ static void menuCompareThreads() {
         costs[t-1] = grandTotal;
     }
 
-    // Suvestine lentele
     std::cout << "\n\n";
-    printSeparator('=');
+    printSep('=');
     std::cout << BOLD << "  PALYGINIMO REZULTATAI\n" << RESET;
-    printSeparator('=');
+    printSep('=');
     std::cout << std::left
               << std::setw(10) << "Gijos"
               << std::setw(16) << "Laikas (ms)"
-              << std::setw(16) << "Pagreitis"
-              << std::setw(14) << "Kaina (EUR)"
-              << "\n";
-    printSeparator();
+              << std::setw(14) << "Pagreitis"
+              << std::setw(14) << "Kaina (EUR)" << "\n";
+    printSep();
 
-    for (int t = 0; t < 3; t++) {
-        double speedup = times[0] / times[t];
-        std::string bar(static_cast<int>(speedup * 10), '|');
+    for (int t = 0; t < maxT; t++) {
+        double speedup = (times[t] > 0) ? times[0] / times[t] : 1.0;
+        std::string bar(static_cast<int>(speedup * 8), '|');
         std::cout << std::left
                   << std::setw(10) << (t + 1)
                   << std::setw(16) << std::fixed << std::setprecision(1) << times[t]
-                  << std::setw(16) << std::fixed << std::setprecision(2) << speedup
+                  << std::setw(14) << std::fixed << std::setprecision(2) << speedup
                   << std::setw(14) << costs[t]
                   << GREEN << bar << RESET << "\n";
     }
-    printSeparator();
+    printSep();
 
     std::cout << "\n" << YELLOW << "Spauskite Enter..." << RESET;
     std::cin.get();
@@ -250,19 +198,18 @@ static void menuHistory() {
     clearScreen();
     printHeader();
     std::cout << BOLD << "\n  VYKDYMU ISTORIJA\n" << RESET;
-    printSeparator();
+    printSep();
 
     if (history.empty()) {
-        std::cout << YELLOW << "\n  Istorija tuscia. Paleiskite simuliacija.\n" << RESET;
+        std::cout << YELLOW << "\n  Istorija tuscia. Paleiskite simuliacija pirma.\n" << RESET;
     } else {
         std::cout << std::left
                   << std::setw(6)  << "Nr."
                   << std::setw(10) << "Gijos"
                   << std::setw(16) << "Laikas (ms)"
                   << std::setw(14) << "Pagreitis"
-                  << std::setw(14) << "Kaina (EUR)"
-                  << "\n";
-        printSeparator();
+                  << std::setw(14) << "Kaina (EUR)" << "\n";
+        printSep();
 
         for (int i = 0; i < (int)history.size(); i++) {
             auto& h = history[i];
@@ -271,10 +218,9 @@ static void menuHistory() {
                       << std::setw(10) << h.threadCount
                       << std::setw(16) << std::fixed << std::setprecision(1) << h.timeMs
                       << std::setw(14) << std::fixed << std::setprecision(2) << h.speedup
-                      << std::setw(14) << h.totalCost
-                      << "\n";
+                      << std::setw(14) << h.totalCost << "\n";
         }
-        printSeparator();
+        printSep();
         std::cout << GREEN << "  Viso vykdymu: " << history.size() << "\n" << RESET;
     }
 
@@ -294,30 +240,43 @@ void runMenu() {
         printHeader();
 
         std::cout << "\n"
-                  << BOLD << "  PAGRINDINIS MENIU\n" << RESET
-                  << "\n"
-                  << "  " << CYAN << "[1]" << RESET << " Paleisti su " << WAREHOUSES << " gijomis (standartinis)\n"
-                  << "  " << CYAN << "[2]" << RESET << " Pasirinkti giju skaiciu\n"
-                  << "  " << CYAN << "[3]" << RESET << " Palyginti 1 / 2 / 3 gijas\n"
-                  << "  " << CYAN << "[4]" << RESET << " Rodyti sanaudu matrica\n"
-                  << "  " << CYAN << "[5]" << RESET << " Redaguoti matrica\n"
-                  << "  " << CYAN << "[6]" << RESET << " Vykdymu istorija\n"
-                  << "  " << RED  << "[0]" << RESET << " Iseiti\n"
+                  << BOLD << "  PAGRINDINIS MENIU\n\n" << RESET
+                  << "  " << CYAN  << "[1]" << RESET << " Ivesti naujus duomenis\n"
+                  << "  " << CYAN  << "[2]" << RESET << " Rodyti dabartinius duomenis\n"
+                  << "  " << CYAN  << "[3]" << RESET << " Paleisti simuliacija (" << WAREHOUSES << " gijos)\n"
+                  << "  " << CYAN  << "[4]" << RESET << " Pasirinkti giju skaiciu\n"
+                  << "  " << CYAN  << "[5]" << RESET << " Palyginti 1 / 2 / " << WAREHOUSES << " gijas\n"
+                  << "  " << CYAN  << "[6]" << RESET << " Vykdymu istorija\n"
+                  << "  " << RED   << "[0]" << RESET << " Iseiti\n"
                   << "\n";
 
         if (!history.empty()) {
             auto& last = history.back();
-            std::cout << MAGENTA << "  Paskutinis vykdymas: "
+            std::cout << MAGENTA << "  Paskutinis: "
                       << last.threadCount << " gijos | "
                       << std::fixed << std::setprecision(1) << last.timeMs << " ms | "
                       << last.totalCost << " EUR\n" << RESET;
         }
 
-        printSeparator();
-        int choice = readInt("  Pasirinkimas: ", 0, 6);
+        printSep();
+        int choice = readInt("  Pasirinkimas [0-6]: ", 0, 6);
 
         switch (choice) {
             case 1:
+                clearScreen();
+                printHeader();
+                inputData();
+                break;
+
+            case 2:
+                clearScreen();
+                printHeader();
+                showCurrentData();
+                std::cout << "\n" << YELLOW << "Spauskite Enter..." << RESET;
+                std::cin.get();
+                break;
+
+            case 3:
                 clearScreen();
                 printHeader();
                 runWithThreadCount(WAREHOUSES);
@@ -325,8 +284,9 @@ void runMenu() {
                 std::cin.get();
                 break;
 
-            case 2: {
-                int tc = readInt("  Giju skaicius (1-8): ", 1, 8);
+            case 4: {
+                int tc = readInt("  Giju skaicius (1-" + std::to_string(WAREHOUSES) + "): ",
+                                 1, WAREHOUSES);
                 clearScreen();
                 printHeader();
                 runWithThreadCount(tc);
@@ -335,20 +295,8 @@ void runMenu() {
                 break;
             }
 
-            case 3:
-                menuCompareThreads();
-                break;
-
-            case 4:
-                clearScreen();
-                printHeader();
-                printMatrix();
-                std::cout << "\n" << YELLOW << "Spauskite Enter..." << RESET;
-                std::cin.get();
-                break;
-
             case 5:
-                menuEditMatrix();
+                menuCompareThreads();
                 break;
 
             case 6:

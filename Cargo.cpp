@@ -6,23 +6,27 @@
 #include <climits>
 
 // ---------------------------------------------------------------------------
-// Duomenys
+// Duomenys (pradinės reikšmės — vartotojas gali keisti per InputData)
 // ---------------------------------------------------------------------------
 
-const int cost[WAREHOUSES][DESTINATIONS] = {
-    {4, 8, 1},   // Sandelis 1
-    {7, 2, 3},   // Sandelis 2
-    {3, 6, 9}    // Sandelis 3
+int WAREHOUSES   = 3;
+int DESTINATIONS = 3;
+
+int cost[MAX_WH][MAX_DEST] = {
+    {4, 8, 1, 0},
+    {7, 2, 3, 0},
+    {3, 6, 9, 0},
+    {0, 0, 0, 0}
 };
 
-const int supply[WAREHOUSES] = {120, 80, 100};
-int demand[DESTINATIONS]     = {150, 100, 50};
+int supply[MAX_WH] = {120, 80, 100, 0};
+int demand[MAX_DEST] = {150, 100, 50, 0};
 
-const std::string warehouseNames[WAREHOUSES] = {"Sandelis 1", "Sandelis 2", "Sandelis 3"};
-const std::string destNames[DESTINATIONS]    = {"Taskas A",   "Taskas B",   "Taskas C"};
+std::string warehouseNames[MAX_WH] = {"Sandelis 1", "Sandelis 2", "Sandelis 3", ""};
+std::string destNames[MAX_DEST]    = {"Taskas A",   "Taskas B",   "Taskas C",   ""};
 
 // ---------------------------------------------------------------------------
-// Globalus kintamieji
+// Globalūs kintamieji
 // ---------------------------------------------------------------------------
 
 std::vector<Allocation> results;
@@ -30,11 +34,11 @@ int grandTotal = 0;
 std::mutex resultMutex;
 std::mutex demandMutex;
 std::mutex coutMutex;
-int demandLeft[DESTINATIONS] = {0};
-double threadTime[WAREHOUSES] = {0};
+int    demandLeft[MAX_DEST] = {0};
+double threadTime[MAX_WH]   = {0};
 
 // ---------------------------------------------------------------------------
-// Pagalbine funkcija: gija saugi spausdinimo
+// Saugi spausdinti funkcija
 // ---------------------------------------------------------------------------
 
 template<typename T>
@@ -55,7 +59,7 @@ void safePrint(Args&&... args) {
 }
 
 // ---------------------------------------------------------------------------
-// Busenos atstatymas (naujai simuliacijai)
+// Būsenos atstatymas
 // ---------------------------------------------------------------------------
 
 void resetState() {
@@ -139,23 +143,23 @@ void warehouseThread(int i) {
 
 void printMatrix() {
     std::cout << "\n=== SANAUDU MATRICA (EUR/t) ===\n";
-    std::cout << std::setw(14) << " ";
+    std::cout << std::setw(16) << " ";
     for (int j = 0; j < DESTINATIONS; j++)
         std::cout << std::setw(12) << destNames[j];
     std::cout << std::setw(12) << "Tiekimas\n";
-    std::cout << std::string(62, '-') << "\n";
+    std::cout << std::string(64, '-') << "\n";
 
     for (int i = 0; i < WAREHOUSES; i++) {
-        std::cout << std::setw(14) << warehouseNames[i];
+        std::cout << std::setw(16) << warehouseNames[i];
         for (int j = 0; j < DESTINATIONS; j++)
             std::cout << std::setw(12) << cost[i][j];
-        std::cout << std::setw(12) << supply[i] << " t\n";
+        std::cout << std::setw(11) << supply[i] << " t\n";
     }
 
-    std::cout << std::setw(14) << "Poreikis";
+    std::cout << std::setw(16) << "Poreikis";
     for (int j = 0; j < DESTINATIONS; j++)
         std::cout << std::setw(11) << demand[j] << " t";
-    std::cout << "\n" << std::string(62, '-') << "\n";
+    std::cout << "\n" << std::string(64, '-') << "\n";
 }
 
 void printTimings(double totalMs) {
@@ -186,25 +190,25 @@ void printTimings(double totalMs) {
 void printResults() {
     std::cout << "\n=== GALUTINIS PASKIRSTYMAS ===\n";
     std::cout << std::left
-              << std::setw(14) << "Is"
-              << std::setw(12) << "I"
+              << std::setw(16) << "Is"
+              << std::setw(14) << "I"
               << std::setw(10) << "Kiekis"
               << std::setw(12) << "Kaina"
               << std::setw(12) << "Suma\n";
-    std::cout << std::string(60, '-') << "\n";
+    std::cout << std::string(64, '-') << "\n";
 
     for (auto& a : results) {
         std::cout << std::left
-                  << std::setw(14) << warehouseNames[a.warehouse]
-                  << std::setw(12) << destNames[a.destination]
+                  << std::setw(16) << warehouseNames[a.warehouse]
+                  << std::setw(14) << destNames[a.destination]
                   << std::setw(10) << (std::to_string(a.quantity) + " t")
                   << std::setw(12) << (std::to_string(a.unitCost) + " EUR/t")
                   << std::setw(12) << (std::to_string(a.totalCost) + " EUR")
                   << "\n";
     }
 
-    std::cout << std::string(60, '-') << "\n";
-    std::cout << std::right << std::setw(48) << "BENDRA KAINA: "
+    std::cout << std::string(64, '-') << "\n";
+    std::cout << std::right << std::setw(52) << "BENDRA KAINA: "
               << grandTotal << " EUR\n";
 }
 

@@ -8,16 +8,27 @@
 using Clock = std::chrono::steady_clock;
 using Ms    = std::chrono::duration<double, std::milli>;
 
+// ---------------------------------------------------------------------------
+// Maksimalus dydis (dinaminiai dydžiai saugomi žemiau)
+// ---------------------------------------------------------------------------
 
-const int WAREHOUSES   = 3;
-const int DESTINATIONS = 3;
+const int MAX_WH   = 4;
+const int MAX_DEST = 4;
 
-extern const int cost[WAREHOUSES][DESTINATIONS];
-extern const int supply[WAREHOUSES];
-extern int demand[DESTINATIONS];
+// Aktyvus dydis (keičiamas per InputData)
+extern int WAREHOUSES;
+extern int DESTINATIONS;
 
-extern const std::string warehouseNames[WAREHOUSES];
-extern const std::string destNames[DESTINATIONS];
+// Duomenys (nebe const — vartotojas gali keisti)
+extern int         cost[MAX_WH][MAX_DEST];
+extern int         supply[MAX_WH];
+extern int         demand[MAX_DEST];
+extern std::string warehouseNames[MAX_WH];
+extern std::string destNames[MAX_DEST];
+
+// ---------------------------------------------------------------------------
+// Duomenų struktūra
+// ---------------------------------------------------------------------------
 
 struct Allocation {
     int warehouse;
@@ -32,15 +43,15 @@ struct Allocation {
 // ---------------------------------------------------------------------------
 
 extern std::vector<Allocation> results;
-extern int grandTotal;
+extern int    grandTotal;
 extern std::mutex resultMutex;
 extern std::mutex demandMutex;
 extern std::mutex coutMutex;
-extern int demandLeft[DESTINATIONS];
-extern double threadTime[WAREHOUSES];
+extern int    demandLeft[MAX_DEST];
+extern double threadTime[MAX_WH];
 
 // ---------------------------------------------------------------------------
-// Funkciju deklaracijos
+// Funkcijų deklaracijos
 // ---------------------------------------------------------------------------
 
 void resetState();

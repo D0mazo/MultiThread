@@ -1,29 +1,41 @@
 #include "Cargo.h"
-#include <thread>
-
-#include "Cargo.h"
 #include <vector>
 #include <thread>
-#include <cmath> // for pow
+#include <cmath>
 
-// Single-threaded: heavier realistic calculation
+
+static inline long long computePrice(int weight, int distance)
+{
+
+    double factor  = 1.0 + 0.01  * weight + 0.005  * distance;              // pagrindinis svorio ir atstumo koeficientas
+    double factor2 = 1.0 + 0.003 * weight   * std::sin(weight   * 0.01);    // svorio svyravimo priemoka
+    double factor3 = 1.0 + 0.002 * distance * std::cos(distance * 0.007);   // atstumo zonos efektyvumas
+    double factor4 = 1.0 + std::log(weight + distance + 1) * 0.004;         // bendras logaritminis masto priedas
+    double factor5 = 1.0 + std::sqrt((double)weight * distance) * 0.0001;   // geometrinio vidurkio priemoka
+    double factor6 = 1.0 + std::pow((weight % 7 + 1) * (distance % 11 + 1) * 0.0001, 1.5); // modulinis kainų lygis
+
+    double combinedFactor = factor * factor2 * factor3 * factor4 * factor5 * factor6;
+
+
+    double overhead = std::pow(weight % 10 + 1, 2) + std::pow(distance % 5 + 1, 3);
+    double penalty  = std::sin(weight * 0.001) * std::cos(distance * 0.001);
+    double logBonus = std::log(weight + 1) * std::sqrt(distance + 1);
+
+    return static_cast<long long>(
+        (weight * distance * combinedFactor) + overhead + penalty * 100.0 + logBonus
+    );
+}
+
+
 long long calculateSingle(const std::vector<Cargo>& data)
 {
     long long total = 0;
-
     for (const auto& c : data)
-    {
-        double factor = 1.0 + 0.01 * c.weight + 0.005 * c.distance;
-        double overhead = std::pow(c.weight % 10 + 1, 2) + std::pow(c.distance % 5 + 1, 3);
-        long long price = static_cast<long long>((c.weight * c.distance * factor) + overhead);
-
-        total += price;
-    }
-
+        total += computePrice(c.weight, c.distance);
     return total;
 }
 
-// Multi-threaded: same formula, split across threads
+
 long long calculateMulti(const std::vector<Cargo>& data, int num_threads)
 {
     if (data.empty()) return 0;
@@ -45,11 +57,7 @@ long long calculateMulti(const std::vector<Cargo>& data, int num_threads)
         threads.emplace_back([start, end, i, &data, &partial_sums]() {
             long long sum = 0;
             for (int j = start; j < end; ++j)
-            {
-                double factor = 1.0 + 0.01 * data[j].weight + 0.005 * data[j].distance;
-                double overhead = std::pow(data[j].weight % 10 + 1, 2) + std::pow(data[j].distance % 5 + 1, 3);
-                sum += static_cast<long long>((data[j].weight * data[j].distance * factor) + overhead);
-            }
+                sum += computePrice(data[j].weight, data[j].distance);
             partial_sums[i] = sum;
         });
     }

@@ -1,8 +1,14 @@
-project(Logistika)
+cmake_minimum_required(VERSION 3.10)
+project(MultiThread)
 
-add_executable(Logistika
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+add_executable(MultiThread
         main.cpp
         Cargo.cpp
         InputData.cpp
         Menu.cpp
 )
+
+target_link_libraries(MultiThread pthread)

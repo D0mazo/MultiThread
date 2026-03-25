@@ -4,6 +4,7 @@
 #include "Cargo.h"
 #include "InputData.h"
 #include "Menu.h"
+#include <iomanip>
 
 int main()
 {
@@ -28,70 +29,80 @@ int main()
                     break;
                 }
 
-                int threads;
-                std::cout << "\nKiek giju naudoti? ";
-                std::cin >> threads;
+                // --- Apšilimo fazė (warm-up) ---
+                // Pirmasis paleidimas visada lėtesnis dėl procesoriaus talpyklos (cache).
+                // Šis paleidimas nematuojamas — tiesiog "pašildo" sistemą tikslesniam matavimui.
+                calculateSingle(data);
+                calculateMulti(data, 16);
 
-                if (threads <= 0)
+                // --- Viengijis etalonas ---
+                // Išmatuojame kiek laiko užtrunka vienas branduolys — tai bus pagrindas palyginimui.
+                auto t1 = std::chrono::high_resolution_clock::now();
+                long long singleResult = calculateSingle(data);
+                auto t2 = std::chrono::high_resolution_clock::now();
+                double time_single = std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+                // --- Automatinis daugiagijis testavimas: 2, 4, 8, 16 gijų ---
+                // Kiekvienas variantas paleidžiamas atskirai ir matuojamas tiksliai.
+                int threadCounts[] = {2, 4, 8, 16};
+                double times[4];
+                long long results[4];
+
+                for (int i = 0; i < 4; i++)
                 {
-                    std::cout << "[!] Netinkamas giju skaicius!\n";
-                    break;
+                    // įrašome laiką prieš daugiagijį skaičiavimą
+                    auto ts = std::chrono::high_resolution_clock::now();
+                    // vykdome daugiagijį skaičiavimą su threadCounts[i] gijų
+                    results[i] = calculateMulti(data, threadCounts[i]);
+                    // įrašome laiką po daugiagijio skaičiavimo
+                    auto te = std::chrono::high_resolution_clock::now();
+                    // apskaičiuojame trukmę milisekundėmis
+                    times[i] = std::chrono::duration<double, std::milli>(te - ts).count();
                 }
 
-                // įrašome laiką prieš viengijį skaičiavimą
-                auto t1 = std::chrono::high_resolution_clock::now();
-                // vykdome viengijį skaičiavimą
-                long long s1 = calculateSingle(data);
-                // įrašome laiką po viengijio skaičiavimo
-                auto t2 = std::chrono::high_resolution_clock::now();
-                // įrašome laiką prieš daugiagijį skaičiavimą
-                auto t3 = std::chrono::high_resolution_clock::now();
-                // vykdome daugiagijį skaičiavimą
-                long long s2 = calculateMulti(data, threads);
-                // įrašome laiką po daugiagijio skaičiavimo
-                auto t4 = std::chrono::high_resolution_clock::now();
-                // apskaičiuojame viengijio trukmę milisekundėmis
-                double time_single = std::chrono::duration<double, std::milli>(t2 - t1).count();
-                // apskaičiuojame daugiagijio trukmę milisekundėmis
-                double time_multi  = std::chrono::duration<double, std::milli>(t4 - t3).count();
-                // apskaičiuojame pagreitį: kiek kartų daugiagijis greitesnis
-                double speedup = (time_multi > 0.0) ? (time_single / time_multi) : 0.0;
-
+                // --- Rezultatų lentelė ---
                 std::cout << "\n========== REZULTATAI ==========\n";
-                std::cout << "[Viengijis]\n";
-                std::cout << "  Bendra kaina : " << s1 << "\n";
+                std::cout << "\n[Viengijis]\n";
+                std::cout << "  Bendra kaina : " << singleResult << "\n";
                 std::cout << "  Laikas       : " << time_single << " ms\n";
-                std::cout << "  // Vienas branduolys, nuoseklus skaiciavimas.\n";
+                std::cout << "  Vienas branduolys, nuoseklsus skaiciavimas\n";
 
-                std::cout << "\n[Daugiagijis (" << threads << " giju)]\n";
-                std::cout << "  Bendra kaina : " << s2 << "\n";
-                std::cout << "  Laikas       : " << time_multi << " ms\n";
-                std::cout << "  // Darbas padalintas tarp " << threads << " giju lygiagreciu.\n";
+                std::cout << "\n[Daugiagijis palyginimas]\n";
+                std::cout << "  Gijos  | Laikas (ms)  | Pagreitis | Bendra kaina\n";
+                std::cout << "  -------|--------------|-----------|-------------\n";
+
+                for (int i = 0; i < 4; i++)
+                {
+                    double speedup = (times[i] > 0.0) ? (time_single / times[i]) : 0.0;
+                    std::cout << "  " << std::setw(5)  << threadCounts[i]
+                              << "  | " << std::setw(12) << std::fixed << std::setprecision(2) << times[i]
+                              << "  | " << std::setw(9)  << std::fixed << std::setprecision(3) << speedup << "x"
+                              << "  | " << std::setw(13) << results[i] << "\n";
+                }
+
+                // --- Geriausio varianto nustatymas ---
+                // Randame kuriam gijų skaičiui užtruko mažiausiai laiko.
+                int bestIdx = 0;
+                for (int i = 1; i < 4; i++)
+                    if (times[i] < times[bestIdx]) bestIdx = i;
+
+                double bestSpeedup = (times[bestIdx] > 0.0) ? (time_single / times[bestIdx]) : 0.0;
 
                 std::cout << "\n[Isvada]\n";
-                if (speedup > 1.1)
-                {
-                    std::cout << "  >> Daugiagijis yra GREITESNIS: " << speedup << "x pagreitis.\n";
-                    std::cout << "  >> Kuo daugiau branduoliu ir duomenu, tuo didesnis pokytis.\n";
-                }
-                else if (speedup < 0.95)
-                {
-                    std::cout << "  >> Viengijis yra greitesnis si karta (" << speedup << "x).\n";
-                    std::cout << "  >> Mazam duomenu kiekiui giju kurimo kastai virsija nauda.\n";
-                    std::cout << "  >> Bandykite su didesniu duomenu kiekiu (>500k irasu).\n";
-                }
+                std::cout << "  >> Geriausias variantas: " << threadCounts[bestIdx] << " gijos ("
+                          << bestSpeedup << "x pagreitis).\n";
+
+
+                // --- Rezultatų teisingumas ---
+                // Tikriname ar visos gijos grąžino tą pačią sumą — jei ne, yra klaida formulėje.
+                bool allMatch = true;
+                for (int i = 0; i < 4; i++)
+                    if (results[i] != singleResult) allMatch = false;
+
+                if (allMatch)
+                    std::cout << "  [OK] Visi metodai grazina vienoda suma - skaiciavimai teisingi.\n";
                 else
-                {
-                    std::cout << "  >> Rezultatai panasus (" << speedup << "x).\n";
-                    std::cout << "  >> Padidinkite duomenu kieki arba giju skaiciu, kad matytumete skirtuma.\n";
-                }
-
-                if (s1 != s2)
-                    std::cout << "\n  [!] ISPEJIMAS: Rezultatai nesutampa! Tikrinkite logika.\n";
-                else
-                    std::cout << "  [OK] Abu metodai grazina vienoda suma - skaiciavimai teisingi.\n";
-
-
+                    std::cout << "  [!] ISPEJIMAS: Rezultatai nesutampa.\n";
                 break;
             }
 

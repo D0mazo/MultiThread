@@ -8,9 +8,6 @@
 using Clock = std::chrono::steady_clock;
 using Ms    = std::chrono::duration<double, std::milli>;
 
-// ---------------------------------------------------------------------------
-// Konstantos
-// ---------------------------------------------------------------------------
 
 const int WAREHOUSES   = 3;
 const int DESTINATIONS = 3;
@@ -21,10 +18,6 @@ extern int demand[DESTINATIONS];
 
 extern const std::string warehouseNames[WAREHOUSES];
 extern const std::string destNames[DESTINATIONS];
-
-// ---------------------------------------------------------------------------
-// Duomenu strukturos
-// ---------------------------------------------------------------------------
 
 struct Allocation {
     int warehouse;

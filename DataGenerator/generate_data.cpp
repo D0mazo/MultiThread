@@ -6,7 +6,7 @@
 int main()
 {
 
-    const long long NUM_RECORDS = 2000000;
+    const long long NUM_RECORDS = 1000000;
 
     std::cout << "Pradedama generuoti " << NUM_RECORDS << " siuntu...\n";
 

@@ -1,7 +1,10 @@
 #pragma once
 
-// Nuskaito duomenis is vartotojo ir atnaujina globalia bусena
-void inputData();
+#include <vector>
+#include "Cargo.h"
 
-// Rodo dabartinus duomenis
-void showCurrentData();
+
+// Funkcija skirta įvesti siuntų duomenis iš testinio failo
+std::vector<Cargo> loadTestData();
+// Funkcija skirta įvesti siuntų duomenis iš konsolės
+std::vector<Cargo> inputData();

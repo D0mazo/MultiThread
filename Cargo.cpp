@@ -1,36 +1,46 @@
 #include "Cargo.h"
 #include <thread>
 
-long long calculateSingle(const std::vector<Cargo>& data) {
+long long calculateSingle(const std::vector<Cargo>& data)
+{
     long long sum = 0;
-    for (auto& c : data)
-        sum += c.weight * c.distance;
+    for (const auto& c : data)
+        sum += static_cast<long long>(c.weight) * c.distance;
     return sum;
 }
 
-void partial(const std::vector<Cargo>& data, int start, int end, long long& result) {
-    result = 0;
-    for (int i = start; i < end; i++)
-        result += data[i].weight * data[i].distance;
-}
+long long calculateMulti(const std::vector<Cargo>& data, int num_threads)
+{
+    if (data.empty()) return 0;
+    if (num_threads < 1) num_threads = 1;
 
-long long calculateMulti(const std::vector<Cargo>& data, int threads) {
-    std::vector<std::thread> t;
-    std::vector<long long> results(threads);
+    const int size = static_cast<int>(data.size());
+    if (num_threads > size) num_threads = size;   // apsauga
 
-    int size = data.size();
-    int chunk = size / threads;
+    std::vector<std::thread> threads;
+    std::vector<long long> partial_sums(num_threads, 0);
 
-    for (int i = 0; i < threads; i++) {
+    const int chunk = (size + num_threads - 1) / num_threads;   // teisingas dalinimas
+
+    for (int i = 0; i < num_threads; ++i)
+    {
         int start = i * chunk;
-        int end = (i == threads - 1) ? size : start + chunk;
+        int end   = std::min(start + chunk, size);
 
-        t.emplace_back(partial, std::cref(data), start, end, std::ref(results[i]));
+        if (start >= end) break;
+
+        threads.emplace_back([&, start, end, i]() {
+            long long sum = 0;
+            for (int j = start; j < end; ++j) {
+                sum += static_cast<long long>(data[j].weight) * data[j].distance;
+            }
+            partial_sums[i] = sum;
+        });
     }
 
-    for (auto& th : t) th.join();
+    for (auto& th : threads) th.join();
 
-    long long sum = 0;
-    for (auto r : results) sum += r;
-    return sum;
+    long long total = 0;
+    for (auto s : partial_sums) total += s;
+    return total;
 }

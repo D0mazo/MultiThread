@@ -38,9 +38,8 @@ int main()
     auto end = std::chrono::high_resolution_clock::now();
     double seconds = std::chrono::duration<double>(end - start).count();
 
-    std::cout << "\n✅ FAILAS SEKMINGAI SUGENERUOTAS!\n";
+    std::cout << "\nFailas sugeneruotas\n";
     std::cout << "   Kiekis : " << NUM_RECORDS << " siuntu\n";
-    std::cout << "   Laikas : " << seconds << " sekundziu\n";
-    std::cout << "   Failo pavadinimas: test_data.txt\n\n";
+        std::cout << "   Failo pavadinimas: test_data.txt\n\n";
     return 0;
 }

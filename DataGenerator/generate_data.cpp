@@ -5,19 +5,15 @@
 
 int main()
 {
-    const long long NUM_RECORDS = 50000;
-
+    const long long NUM_RECORDS = 50000; // can increase for bigger datasets
     std::cout << "Pradedama generuoti " << NUM_RECORDS << " siuntu...\n";
-
-    auto start = std::chrono::high_resolution_clock::now();
 
     std::ofstream file("test_data.txt");
     if (!file.is_open())
     {
-        std::cout << "[!] Klaida: nepavyko sukurti failo 'test_data.txt'\n";
+        std::cout << "[!] Nepavyko sukurti failo 'test_data.txt'\n";
         return 1;
     }
-
 
     file << NUM_RECORDS << '\n';
 
@@ -34,12 +30,6 @@ int main()
     }
 
     file.close();
-
-    auto end = std::chrono::high_resolution_clock::now();
-    double seconds = std::chrono::duration<double>(end - start).count();
-
-    std::cout << "\nFailas sugeneruotas\n";
-    std::cout << "   Kiekis : " << NUM_RECORDS << " siuntu\n";
-        std::cout << "   Failo pavadinimas: test_data.txt\n\n";
+    std::cout << "Failas sugeneruotas: test_data.txt, " << NUM_RECORDS << " siuntu\n";
     return 0;
 }

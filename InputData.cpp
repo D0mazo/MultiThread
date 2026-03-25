@@ -30,7 +30,6 @@ std::vector<Cargo> loadTestData()
     if (!file.is_open())
     {
         std::cout << "[!] Failas 'test_data.txt' nerastas!\n";
-        std::cout << "   Sukurk ji projekto aplanke.\n";
         return data;
     }
 

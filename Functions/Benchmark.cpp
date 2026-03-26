@@ -22,6 +22,11 @@ void runBenchmark(const std::vector<Cargo>& data)
     auto t2 = std::chrono::high_resolution_clock::now();
     double time_single = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
+    // --- Automatinis daugiagijis testavimas: 2, 4, 8, 16 gijų namų kompiuteris---
+    //int threadCounts[] = {2, 4, 8, 16};
+    // --- Automatinis daugiagijis testavimas: 2, 4, 8, 12 nešiojimas---
+    //int threadCounts[] = {2, 4, 6, 12};
+
     // Dinamiškai parenkame gijų skaičius pagal procesoriaus branduolius
     int maxThreads = std::thread::hardware_concurrency();
     int threadCounts[] = {

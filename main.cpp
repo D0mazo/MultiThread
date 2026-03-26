@@ -42,9 +42,10 @@ int main()
                 auto t2 = std::chrono::high_resolution_clock::now();
                 double time_single = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
-                // --- Automatinis daugiagijis testavimas: 2, 4, 8, 16 gijų ---
-                // Kiekvienas variantas paleidžiamas atskirai ir matuojamas tiksliai.
-                int threadCounts[] = {2, 4, 8, 16};
+                // --- Automatinis daugiagijis testavimas: 2, 4, 8, 16 gijų namų kompiuteris---
+                //int threadCounts[] = {2, 4, 8, 16};
+                // --- Automatinis daugiagijis testavimas: 2, 4, 8, 12 nešiojimas---
+                int threadCounts[] = {2, 4, 6, 12};
                 double times[4];
                 long long results[4];
 

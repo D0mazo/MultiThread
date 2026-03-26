@@ -3,7 +3,7 @@
 #include "Calculations/Cargo.h"
 #include "Input/InputData.h"
 #include "Menu.h"
-#include "Functions/Benchmark.h"
+#include "TimeFunctions/Benchmark.h"
 
 int main()
 {

@@ -23,18 +23,18 @@ void runBenchmark(const std::vector<Cargo>& data)
     double time_single = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
     // --- Automatinis daugiagijis testavimas: 2, 4, 8, 16 gijų namų kompiuteris---
-    //int threadCounts[] = {2, 4, 8, 16};
+    int threadCounts[] = {2, 4, 8, 56};
     // --- Automatinis daugiagijis testavimas: 2, 4, 8, 12 nešiojimas---
     //int threadCounts[] = {2, 4, 6, 12};
 
     // Dinamiškai parenkame gijų skaičius pagal procesoriaus branduolius
-    int maxThreads = std::thread::hardware_concurrency();
-    int threadCounts[] = {
-        std::max(1, maxThreads / 6),
-        std::max(1, maxThreads / 3),
-        std::max(1, maxThreads / 2),
-        maxThreads
-    };
+    //int maxThreads = std::thread::hardware_concurrency();
+    //int threadCounts[] = {
+    //    std::max(1, maxThreads / 6),
+    //    std::max(1, maxThreads / 3),
+    //    std::max(1, maxThreads / 2),
+    //    maxThreads
+    //};
 
     double times[4];
     long long results[4];

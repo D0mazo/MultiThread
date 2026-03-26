@@ -5,6 +5,7 @@
 #include "InputData.h"
 #include "Menu.h"
 #include <iomanip>
+#include <thread>
 
 int main()
 {
@@ -29,14 +30,13 @@ int main()
                     break;
                 }
 
-                calculateSingle(data);
-                //namu
-                //calculateMulti(data, 16);
-                //nešiojamas
-                calculateMulti(data, 12);
+                // Warm-up: paleidžiame kartą prieš matavimus, kad cache ir branch predictor sušiltų
+                std::cout << "\n[~] Apsilimas (warm-up)...\n";
+                volatile long long warmup = calculateSingle(data);
+                calculateMulti(data, std::thread::hardware_concurrency());
+                (void)warmup;
 
-                // single thread
-                // laiko matavimas
+                // Viengijis - laiko matavimas
                 auto t1 = std::chrono::high_resolution_clock::now();
                 long long singleResult = calculateSingle(data);
                 auto t2 = std::chrono::high_resolution_clock::now();

@@ -45,7 +45,16 @@ int main()
                 // --- Automatinis daugiagijis testavimas: 2, 4, 8, 16 gijų namų kompiuteris---
                 //int threadCounts[] = {2, 4, 8, 16};
                 // --- Automatinis daugiagijis testavimas: 2, 4, 8, 12 nešiojimas---
-                int threadCounts[] = {2, 4, 6, 12};
+                //int threadCounts[] = {2, 4, 6, 12};
+                int maxThreads = std::thread::hardware_concurrency();
+                int threadCounts[] = {
+                    std::max(1, maxThreads / 6),
+                    std::max(1, maxThreads / 3),
+                    std::max(1, maxThreads / 2),
+                    maxThreads
+                };
+
+
                 double times[4];
                 long long results[4];
 

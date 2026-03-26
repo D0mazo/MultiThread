@@ -1,6 +1,6 @@
 # MultiThread — Lygiagretaus programavimo laboratorinis darbas
 
-Universiteto laboratorinis darbas, demonstruojantis viengijio ir daugiagijio skaičiavimo palyginimą C++ aplinkoje.
+Proejektinis darbas, demonstruojantis viengijio ir daugiagijio skaičiavimo palyginimą C++ aplinkoje.
 
 ## Aprašymas
 
@@ -23,20 +23,6 @@ MultiThread/
     └── test_data.txt       # Sugeneruoti testiniai duomenys
 ```
 
-## Paleidimas
-
-### Reikalavimai
-- C++17 arba naujesnė versija
-- CMake 3.10+
-- POSIX palaikanti OS (Linux / macOS) arba Windows su MinGW
-
-### Kompiliavimas
-
-```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
-```
 
 ### Paleidimas
 

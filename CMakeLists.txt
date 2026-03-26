@@ -9,8 +9,10 @@ add_executable(MultiThread
         Cargo.cpp
         InputData.cpp
         Menu.cpp
+        Functions/Benchmark.cpp
 )
 
+target_include_directories(MultiThread PRIVATE . Functions)
 target_link_libraries(MultiThread pthread)
 
 # DataGenerator atskiras executable

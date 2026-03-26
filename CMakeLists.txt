@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(MultiThread
         main.cpp
-        Cargo.cpp
-        InputData.cpp
+        Calculations/Cargo.cpp
+        Input/InputData.cpp
         Menu.cpp
         Functions/Benchmark.cpp
 )

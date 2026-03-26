@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "Benchmark.h"
-#include "../Cargo.h"
+#include "../Calculations/Cargo.h"
 #include <iostream>
 #include <chrono>
 #include <iomanip>
@@ -35,7 +35,7 @@ void runBenchmark(const std::vector<Cargo>& data)
     long long results[4];
 
     for (int i = 0; i < 4; i++)
-    {
+    { //daugiagijinis laiko skaiviamas
         auto ts = std::chrono::high_resolution_clock::now();
         results[i] = calculateMulti(data, threadCounts[i]);
         auto te = std::chrono::high_resolution_clock::now();

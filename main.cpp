@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
-#include "Cargo.h"
-#include "InputData.h"
+#include "Calculations/Cargo.h"
+#include "Input/InputData.h"
 #include "Menu.h"
 #include "Functions/Benchmark.h"
 

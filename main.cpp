@@ -29,14 +29,14 @@ int main()
                     break;
                 }
 
-                // --- Apšilimo fazė (warm-up) ---
-                // Pirmasis paleidimas visada lėtesnis dėl procesoriaus talpyklos (cache).
-                // Šis paleidimas nematuojamas — tiesiog "pašildo" sistemą tikslesniam matavimui.
                 calculateSingle(data);
-                calculateMulti(data, 16);
+                //namu
+                //calculateMulti(data, 16);
+                //nešiojamas
+                calculateMulti(data, 12);
 
-                // --- Viengijis etalonas ---
-                // Išmatuojame kiek laiko užtrunka vienas branduolys — tai bus pagrindas palyginimui.
+                // single thread
+                // laiko matavimas
                 auto t1 = std::chrono::high_resolution_clock::now();
                 long long singleResult = calculateSingle(data);
                 auto t2 = std::chrono::high_resolution_clock::now();

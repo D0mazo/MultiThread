@@ -12,3 +12,12 @@ add_executable(MultiThread
 )
 
 target_link_libraries(MultiThread pthread)
+
+# DataGenerator atskiras executable
+add_executable(DataGenerator
+        DataGenerator/generate_data.cpp
+)
+
+set_target_properties(DataGenerator PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/DataGenerator"
+)
